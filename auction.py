@@ -4,15 +4,15 @@ import grequests
 import json
 import time
 
-# DEBUG = True
-DEBUG = False
+DEBUG = True
+#DEBUG = False
 
 url_base = f"https://api.hypixel.net/skyblock/auctions"
 
 MAX_CONNECTIONS = 10
 
 data = {}
-filtered_auctions = {}
+filtered_auctions = {"common": {}, "uncommon": {}, "rare": {}, "epic": {}, "mythic": {}, "legendary": {}, "divine": {}, "special": {}, "very special": {}}
 flips = []
 
 MAX_PRICE = 1000000
@@ -45,13 +45,13 @@ def checkAuctions():
             if item_ans[0]:
                 print('Item Passed Filter')
                 # Add item to sorted dictionary of items
-                if item['item_name'] in filtered_auctions:
+                if item['item_name'] in filtered_auctions[item['tier'].lower()]:
                     print('Item exists in filtered auction')
-                    filtered_auctions[item['item_name']].add(item)
+                    filtered_auctions[item['tier'].lower()][item['item_name']].add(item)
                     print('Appended item to filtered auction')
                 else:
                     print('Item does not exist in filtered auction')
-                    filtered_auctions[item['item_name']] = slist(
+                    filtered_auctions[item['tier'].lower()][item['item_name']] = slist(
                         [item], key=lambda x: x['starting_bid'])
                     print('New slist created for item')
 
@@ -67,18 +67,19 @@ def checkAuctions():
 
 def findFlips():
     global filtered_auctions, flips
-    for item_name in filtered_auctions:
-        item_list = filtered_auctions[item_name]
+    for tier in filtered_auctions.keys():
+        for item_name in filtered_auctions[tier]:
+            item_list = filtered_auctions[tier][item_name]
 
-        # Filter flips
-        if len(item_list) < 2:
-            continue
-        if item_list[1]['starting_bid'] - item_list[0]['starting_bid'] < MIN_PROFIT:
-            continue
-        flip = item_list[0]
-        # flips.append(item_list)
-        flips.append(
-            [flip['item_name'], "/viewauction " + flip['uuid'], "Price:", flip['starting_bid'], "Profit:", item_list[1]['starting_bid'] - item_list[0]['starting_bid']])
+            # Filter flips
+            if len(item_list) < 2:
+                continue
+            if item_list[1]['starting_bid'] - item_list[0]['starting_bid'] < MIN_PROFIT:
+                continue
+            flip = item_list[0]
+            # flips.append(item_list)
+            flips.append(
+                [flip['item_name'], "/viewauction " + flip['uuid'], "Price:", flip['starting_bid'], "Profit:", item_list[1]['starting_bid'] - item_list[0]['starting_bid']])
 
 
 def main():
@@ -87,8 +88,6 @@ def main():
 
     for res in grequests.map(resp):
         data = json.loads(res.content)
-        res.close()
-        print(data.keys())
         total_pages = data['totalPages']
         # remaining_requests = data['RateLimit-Remaining']
         print('Total Pages Found: ' + str(total_pages))
