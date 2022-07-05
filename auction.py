@@ -7,8 +7,8 @@ import time
 # TODO: See if there is a way to account for quantity differences
 # TODO: Do stars matter?
 
-DEBUG = True
-#DEBUG = False
+# DEBUG = True
+DEBUG = False
 
 url_base = f"https://api.hypixel.net/skyblock/auctions"
 
@@ -138,6 +138,7 @@ def main():
     # Async remaining pages - limited rate
     results = []
     for i in range(1, total_pages + 1, MAX_CONNECTIONS):
+        print('URL Batch ' + i)
         resp = (grequests.get(url, stream=False)
                 for url in urls[i:i + MAX_CONNECTIONS])
         time.sleep(1)
@@ -162,9 +163,6 @@ def main():
     print(str(len(flips)) + ' items found')
     for item in flips:
         print(*item, sep=' # ')
-    # for item_list in flips:
-    #     print(item_list[0]['item_name'], item_list[0]['starting_bid'])
-    #     print(item_list[1]['item_name'], item_list[1]['starting_bid'])
 
 
 if __name__ == "__main__":
