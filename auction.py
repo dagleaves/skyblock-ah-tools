@@ -4,6 +4,9 @@ import grequests
 import json
 import time
 
+# TODO: See if there is a way to account for quantity differences
+# TODO: Do stars matter?
+
 DEBUG = True
 #DEBUG = False
 
@@ -12,12 +15,14 @@ url_base = f"https://api.hypixel.net/skyblock/auctions"
 MAX_CONNECTIONS = 10
 
 data = {}
-filtered_auctions = {"common": {}, "uncommon": {}, "rare": {}, "epic": {}, "mythic": {}, "legendary": {}, "divine": {}, "special": {}, "very special": {}}
+filtered_auctions = {"common": {}, "uncommon": {}, "rare": {}, "epic": {
+}, "mythic": {}, "legendary": {}, "divine": {}, "special": {}, "very special": {}}
 flips = []
 
 MAX_PRICE = 1000000
 MIN_PROFIT = 100000
-REFORGES = ['Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', 'Spicy ', 'Legendary ', 'Dirty ', 'Fabled ', 'Suspicious ', 'Gilded ', 'Warped ', 'Withered ', 'Bulky ', 'Treacherous ', 'Stiff ', 'Lucky ', 'Salty ', 'Deadly ', 'Fine ', 'Grand ', 'Hasty ', 'Neat ', 'Rapid ', 'Unreal ', 'Awkward ', 'Rich ', 'Precise ', 'Spiritual ', 'Headstrong ', 'Clean ', 'Fierce ', 'Heavy ', 'Light ', 'Mythic ', 'Pure ', 'Smart ', 'Titanic ', 'Wise ', 'Perfect ', 'Necrotic ', 'Ancient ', 'Spiked ', 'Renowned ', 'Cubic ', 'Hyper ', 'Reinforced ', 'Loving ', 'Ridiculous ', 'Empowered ', 'Giant ', 'Submerged ', 'Jaded ', 'Double-Bit ', 'Lumberjack\'s ', 'Great ', 'Rugged ', 'Lush ', 'Green Thumb ', 'Peasant\'s ', 'Robust ', 'Zooming ', 'Unyielding ', 'Prospector\'s ', 'Excellent ', 'Sturdy ', 'Fortunate ', 'Moil ', 'Toil ', 'Blessed ', 'Bountiful ', 'Magnetic ', 'Fruitful ', 'Refined ', 'Stellar ', 'Mithraic ', 'Auspicious ', 'Fleet ', 'Heated ', 'Ambered ', 'Waxed ', 'Fortified ', 'Strengthened ', 'Glistening ', 'Very ', 'Highly ', 'Extremely ', 'Not So ', 'Thicc ', 'Absolutely ', 'Even More ']
+REFORGES = ['Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', 'Spicy ', 'Legendary ', 'Dirty ', 'Fabled ', 'Suspicious ', 'Gilded ', 'Warped ', 'Withered ', 'Bulky ', 'Treacherous ', 'Stiff ', 'Lucky ', 'Salty ', 'Deadly ', 'Fine ', 'Grand ', 'Hasty ', 'Neat ', 'Rapid ', 'Unreal ', 'Awkward ', 'Rich ', 'Precise ', 'Spiritual ', 'Headstrong ', 'Clean ', 'Fierce ', 'Heavy ', 'Light ', 'Mythic ', 'Pure ', 'Smart ', 'Titanic ', 'Wise ', 'Perfect ', 'Necrotic ', 'Ancient ', 'Spiked ', 'Renowned ', 'Cubic ', 'Hyper ', 'Reinforced ',
+            'Loving ', 'Ridiculous ', 'Empowered ', 'Giant ', 'Submerged ', 'Jaded ', 'Double-Bit ', 'Lumberjack\'s ', 'Great ', 'Rugged ', 'Lush ', 'Green Thumb ', 'Peasant\'s ', 'Robust ', 'Zooming ', 'Unyielding ', 'Prospector\'s ', 'Excellent ', 'Sturdy ', 'Fortunate ', 'Moil ', 'Toil ', 'Blessed ', 'Bountiful ', 'Magnetic ', 'Fruitful ', 'Refined ', 'Stellar ', 'Mithraic ', 'Auspicious ', 'Fleet ', 'Heated ', 'Ambered ', 'Waxed ', 'Fortified ', 'Strengthened ', 'Glistening ', 'Very ', 'Highly ', 'Extremely ', 'Not So ', 'Thicc ', 'Absolutely ', 'Even More ']
 
 
 def checkItem(item):
@@ -37,35 +42,56 @@ def checkItem(item):
 def checkAuctions():
     global data, filtered_auctions
     for item in data['auctions']:
+        item_name = item['item_name']
+        item_tier = item['tier']
         print('Found Item')
         try:
             item_ans = checkItem(item)
             print("Checked Item", item_ans)
-            # Passed filter
-            if item_ans[0]:
-                print('Item Passed Filter')
 
-                # TODO: check for reforge / false reforge match (wise armor)
-
-                # Add item to sorted dictionary of items
-                if item['item_name'] in filtered_auctions[item['tier'].lower()]:
-                    print('Item exists in filtered auction')
-                    filtered_auctions[item['tier'].lower()][item['item_name']].add(item)
-                    print('Appended item to filtered auction')
-                else:
-                    print('Item does not exist in filtered auction')
-                    filtered_auctions[item['tier'].lower()][item['item_name']] = slist(
-                        [item], key=lambda x: x['starting_bid'])
-                    print('New slist created for item')
-
-                # Failed filter
-            else:
+            # Failed Filter
+            if not item_ans[0]:
+                print('Item Failed Filter')
                 continue
+            # Passed Filter
+            print('Item Passed Filter')
+
+            for reforge in REFORGES:
+                # Check if item is reforged
+                if item_name.startswith(reforge):
+                    # Make sure it is not a duplicate prefix item
+                    if reforge == 'Wise ' and item_name[len(reforge):] == 'Dragon Armor':
+                        continue
+                    if reforge == 'Strong ' and item_name[len(reforge):] == 'Dragon Armor':
+                        continue
+                    if reforge == 'Superior ' and item_name[len(reforge):] == 'Dragon Armor':
+                        continue
+                    if reforge == 'Heavy ' and item_name[len(reforge):] == 'Armor':
+                        continue
+                    if reforge == 'Perfect ' and item_name[len(reforge):] == 'Armor':
+                        continue
+                    if reforge == 'Refined ' and item_name[len(reforge):] == 'Mithril Pickaxe':
+                        continue
+                    if reforge == 'Refined ' and item_name[len(reforge):] == 'Titanium Pickaxe':
+                        continue
+                    item_name = item_name[len(reforge):]
+                    break
+
+            # Add item to sorted dictionary of items
+            if item_name in filtered_auctions[item_tier.lower()]:
+                print('Item exists in filtered auction')
+                filtered_auctions[item_tier.lower(
+                )][item_name].add(item)
+                print('Appended item to filtered auction')
+            else:
+                print('Item does not exist in filtered auction')
+                filtered_auctions[item_tier.lower()][item_name] = slist(
+                    [item], key=lambda x: x['starting_bid'])
+                print('New slist created for item')
 
         except:
             print("CHECK AUCTION FAILED")
             exit()
-            # pprint(data)
 
 
 def findFlips():
@@ -114,7 +140,7 @@ def main():
     for i in range(1, total_pages + 1, MAX_CONNECTIONS):
         resp = (grequests.get(url, stream=False)
                 for url in urls[i:i + MAX_CONNECTIONS])
-        time.sleep(0.2)
+        time.sleep(1)
         results.extend(grequests.map(resp))
 
     # Get items from remaining pages
