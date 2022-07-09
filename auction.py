@@ -1,10 +1,11 @@
-from pprint import pprint
 from sortedcontainers import SortedList as slist
+from base64 import b64decode
 import grequests
 import json
 import time
+import nbt
+import io
 
-# TODO: See if there is a way to account for quantity differences
 # TODO: Do stars matter?
 
 # DEBUG = True
@@ -44,6 +45,13 @@ def checkAuctions():
     for item in data['auctions']:
         item_name = item['item_name']
         item_tier = item['tier']
+        item_bytes = nbt.nbt.NBTFile(fileobj = io.BytesIO(b64decode(item['item_bytes'])))
+        item_count = item_bytes[0][0][1].value
+
+        # Account for item quantity in price
+        if item_count > 1:
+            item['starting_bid'] = item['starting_bid'] / item_count
+
         print('Found Item')
         try:
             item_ans = checkItem(item)
@@ -138,7 +146,7 @@ def main():
     # Async remaining pages - limited rate
     results = []
     for i in range(1, total_pages + 1, MAX_CONNECTIONS):
-        print('URL Batch ' + i)
+        print('URL Batch ' + str(i))
         resp = (grequests.get(url, stream=False)
                 for url in urls[i:i + MAX_CONNECTIONS])
         time.sleep(1)
