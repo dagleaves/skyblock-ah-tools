@@ -2,6 +2,7 @@ from sortedcontainers import SortedList as slist
 from base64 import b64decode
 import grequests
 import json
+import math
 import time
 import nbt
 import io
@@ -27,7 +28,7 @@ REFORGES = ['Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', '
 
 
 def checkItem(item):
-    print('Checking Item')
+    # print('Checking Item')
     # Filters
     if not item['bin']:
         return (False, 'Not BIN')
@@ -52,17 +53,17 @@ def checkAuctions():
         if item_count > 1:
             item['starting_bid'] = item['starting_bid'] / item_count
 
-        print('Found Item')
+        # print('Found Item')
         try:
             item_ans = checkItem(item)
-            print("Checked Item", item_ans)
+            # print("Checked Item", item_ans)
 
             # Failed Filter
             if not item_ans[0]:
-                print('Item Failed Filter')
+                # print('Item Failed Filter')
                 continue
             # Passed Filter
-            print('Item Passed Filter')
+            # print('Item Passed Filter')
 
             for reforge in REFORGES:
                 # Check if item is reforged
@@ -87,15 +88,15 @@ def checkAuctions():
 
             # Add item to sorted dictionary of items
             if item_name in filtered_auctions[item_tier.lower()]:
-                print('Item exists in filtered auction')
+                # print('Item exists in filtered auction')
                 filtered_auctions[item_tier.lower(
                 )][item_name].add(item)
-                print('Appended item to filtered auction')
+                # print('Appended item to filtered auction')
             else:
-                print('Item does not exist in filtered auction')
+                # print('Item does not exist in filtered auction')
                 filtered_auctions[item_tier.lower()][item_name] = slist(
                     [item], key=lambda x: x['starting_bid'])
-                print('New slist created for item')
+                # print('New slist created for item')
 
         except:
             print("CHECK AUCTION FAILED")
@@ -116,7 +117,7 @@ def findFlips():
             flip = item_list[0]
             # flips.append(item_list)
             flips.append(
-                [flip['item_name'], "/viewauction " + flip['uuid'], "Price:", flip['starting_bid'], "Profit:", item_list[1]['starting_bid'] - item_list[0]['starting_bid']])
+                ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid']))])
 
 
 def main():
@@ -126,9 +127,7 @@ def main():
     for res in grequests.map(resp):
         data = json.loads(res.content)
         total_pages = data['totalPages']
-        # remaining_requests = data['RateLimit-Remaining']
         print('Total Pages Found: ' + str(total_pages))
-        # print('Remaining Requests' + str(remaining_requests))
 
         # Verify success
         if data['success']:
@@ -146,15 +145,19 @@ def main():
     # Async remaining pages - limited rate
     results = []
     for i in range(1, total_pages + 1, MAX_CONNECTIONS):
-        print('URL Batch ' + str(i))
+        print('Retrieving Auctions (' + str((i - 1) // MAX_CONNECTIONS + 1) + ' / ' + str(math.ceil(total_pages / MAX_CONNECTIONS)) + ')')
         resp = (grequests.get(url, stream=False)
                 for url in urls[i:i + MAX_CONNECTIONS])
         time.sleep(1)
         results.extend(grequests.map(resp))
-
+    
     # Get items from remaining pages
+    print('Loading Auctions...')
     for res in results:
-        data = json.loads(res.content)
+        try:
+            data = json.loads(res.content)
+        except:
+            print('Failed to access API... Please wait before running the program again')
         # Verify success
         if data['success']:
             checkAuctions()
@@ -167,10 +170,15 @@ def main():
     # Sort flips
     flips = sorted(flips, key=lambda x: x[-1])
 
+    # Format output
+    lens = [max(map(len, col)) for col in zip(*flips)]
+    fmt = '\t'.join('{{:{}}}'.format(x) for x in lens)
+    table = [fmt.format(*row) for row in flips]
+    
     # Print results
     print(str(len(flips)) + ' items found')
-    for item in flips:
-        print(*item, sep=' # ')
+    time.sleep(1)
+    print('\n'.join(table))
 
 
 if __name__ == "__main__":
