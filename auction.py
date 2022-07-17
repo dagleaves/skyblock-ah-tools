@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from sortedcontainers import SortedList as slist
 from base64 import b64decode
 import grequests
@@ -14,13 +16,12 @@ DEBUG = False
 
 url_base = f"https://api.hypixel.net/skyblock/auctions"
 
-MAX_CONNECTIONS = 10
-
 data = {}
 filtered_auctions = {"common": {}, "uncommon": {}, "rare": {}, "epic": {
 }, "mythic": {}, "legendary": {}, "divine": {}, "special": {}, "very special": {}}
 flips = []
 
+MAX_CONNECTIONS = 5
 MAX_PRICE = 1000000
 MIN_PROFIT = 100000
 REFORGES = ['Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', 'Spicy ', 'Legendary ', 'Dirty ', 'Fabled ', 'Suspicious ', 'Gilded ', 'Warped ', 'Withered ', 'Bulky ', 'Treacherous ', 'Stiff ', 'Lucky ', 'Salty ', 'Deadly ', 'Fine ', 'Grand ', 'Hasty ', 'Neat ', 'Rapid ', 'Unreal ', 'Awkward ', 'Rich ', 'Precise ', 'Spiritual ', 'Headstrong ', 'Clean ', 'Fierce ', 'Heavy ', 'Light ', 'Mythic ', 'Pure ', 'Smart ', 'Titanic ', 'Wise ', 'Perfect ', 'Necrotic ', 'Ancient ', 'Spiked ', 'Renowned ', 'Cubic ', 'Hyper ', 'Reinforced ',
@@ -46,7 +47,8 @@ def checkAuctions():
     for item in data['auctions']:
         item_name = item['item_name']
         item_tier = item['tier']
-        item_bytes = nbt.nbt.NBTFile(fileobj = io.BytesIO(b64decode(item['item_bytes'])))
+        item_bytes = nbt.nbt.NBTFile(
+            fileobj=io.BytesIO(b64decode(item['item_bytes'])))
         item_count = item_bytes[0][0][1].value
 
         # Account for item quantity in price
@@ -117,7 +119,7 @@ def findFlips():
             flip = item_list[0]
             # flips.append(item_list)
             flips.append(
-                ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid']))])
+                ["/viewauction " + flip['uuid'], flip['item_name'].encode('ascii', 'ignore').decode('ascii'), "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid']))])
 
 
 def main():
@@ -145,12 +147,13 @@ def main():
     # Async remaining pages - limited rate
     results = []
     for i in range(1, total_pages + 1, MAX_CONNECTIONS):
-        print('Retrieving Auctions (' + str((i - 1) // MAX_CONNECTIONS + 1) + ' / ' + str(math.ceil(total_pages / MAX_CONNECTIONS)) + ')')
+        print('Retrieving Auctions (' + str((i - 1) // MAX_CONNECTIONS + 1) +
+              ' / ' + str(math.ceil(total_pages / MAX_CONNECTIONS)) + ')')
         resp = (grequests.get(url, stream=False)
                 for url in urls[i:i + MAX_CONNECTIONS])
         time.sleep(1)
         results.extend(grequests.map(resp))
-    
+
     # Get items from remaining pages
     print('Loading Auctions...')
     for res in results:
@@ -172,13 +175,15 @@ def main():
 
     # Format output
     lens = [max(map(len, col)) for col in zip(*flips)]
-    fmt = '\t'.join('{{:{}}}'.format(x) for x in lens)
+    fmt = '\t'.join('{{:{}}}'.format(x)
+                    for x in lens)
     table = [fmt.format(*row) for row in flips]
-    
+
     # Print results
     print(str(len(flips)) + ' items found')
     time.sleep(1)
-    print('\n'.join(table))
+    # print('\n'.join(table))
+    print(*table, sep='\n')
 
 
 if __name__ == "__main__":
