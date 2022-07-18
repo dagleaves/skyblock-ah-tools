@@ -2,28 +2,31 @@
 
 from sortedcontainers import SortedList as slist
 from base64 import b64decode
+import traceback
 import grequests
 import json
 import math
 import time
 import nbt
+import sys
 import io
 
 # TODO: Do stars matter?
 
-# DEBUG = True
+DEBUG = True
 DEBUG = False
 
-url_base = f"https://api.hypixel.net/skyblock/auctions"
+url_base = "https://api.hypixel.net/skyblock/auctions"
 
 data = {}
 filtered_auctions = {"common": {}, "uncommon": {}, "rare": {}, "epic": {
-}, "mythic": {}, "legendary": {}, "divine": {}, "special": {}, "very special": {}}
+}, "mythic": {}, "legendary": {}, "divine": {}, "special": {}, "very_special": {}, 'supreme': {}}
 flips = []
 
 MAX_CONNECTIONS = 5
-MAX_PRICE = 1000000
+MAX_PRICE = 5000000
 MIN_PROFIT = 100000
+MIN_VOLUME = 5      # filter out low sale volume auctions
 REFORGES = ['Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', 'Spicy ', 'Legendary ', 'Dirty ', 'Fabled ', 'Suspicious ', 'Gilded ', 'Warped ', 'Withered ', 'Bulky ', 'Treacherous ', 'Stiff ', 'Lucky ', 'Salty ', 'Deadly ', 'Fine ', 'Grand ', 'Hasty ', 'Neat ', 'Rapid ', 'Unreal ', 'Awkward ', 'Rich ', 'Precise ', 'Spiritual ', 'Headstrong ', 'Clean ', 'Fierce ', 'Heavy ', 'Light ', 'Mythic ', 'Pure ', 'Smart ', 'Titanic ', 'Wise ', 'Perfect ', 'Necrotic ', 'Ancient ', 'Spiked ', 'Renowned ', 'Cubic ', 'Hyper ', 'Reinforced ',
             'Loving ', 'Ridiculous ', 'Empowered ', 'Giant ', 'Submerged ', 'Jaded ', 'Double-Bit ', 'Lumberjack\'s ', 'Great ', 'Rugged ', 'Lush ', 'Green Thumb ', 'Peasant\'s ', 'Robust ', 'Zooming ', 'Unyielding ', 'Prospector\'s ', 'Excellent ', 'Sturdy ', 'Fortunate ', 'Moil ', 'Toil ', 'Blessed ', 'Bountiful ', 'Magnetic ', 'Fruitful ', 'Refined ', 'Stellar ', 'Mithraic ', 'Auspicious ', 'Fleet ', 'Heated ', 'Ambered ', 'Waxed ', 'Fortified ', 'Strengthened ', 'Glistening ', 'Very ', 'Highly ', 'Extremely ', 'Not So ', 'Thicc ', 'Absolutely ', 'Even More ']
 
@@ -46,6 +49,9 @@ def checkAuctions():
     global data, filtered_auctions
     for item in data['auctions']:
         item_name = item['item_name']
+        item_name = ' '.join(item_name.encode(
+            'ascii', 'ignore').decode().split())    # remove unicode characters
+        item['item_name'] = item_name
         item_tier = item['tier']
         item_bytes = nbt.nbt.NBTFile(
             fileobj=io.BytesIO(b64decode(item['item_bytes'])))
@@ -86,6 +92,7 @@ def checkAuctions():
                     if reforge == 'Refined ' and item_name[len(reforge):] == 'Titanium Pickaxe':
                         continue
                     item_name = item_name[len(reforge):]
+                    item['item_name'] = item_name
                     break
 
             # Add item to sorted dictionary of items
@@ -101,7 +108,8 @@ def checkAuctions():
                 # print('New slist created for item')
 
         except:
-            print("CHECK AUCTION FAILED")
+            # print("CHECK AUCTION FAILED")
+            traceback.print_exception(*sys.exc_info())
             exit()
 
 
@@ -112,14 +120,13 @@ def findFlips():
             item_list = filtered_auctions[tier][item_name]
 
             # Filter flips
-            if len(item_list) < 2:
+            if len(item_list) < MIN_VOLUME:
                 continue
             if item_list[1]['starting_bid'] - item_list[0]['starting_bid'] < MIN_PROFIT:
                 continue
             flip = item_list[0]
-            # flips.append(item_list)
             flips.append(
-                ["/viewauction " + flip['uuid'], flip['item_name'].encode('ascii', 'ignore').decode('ascii'), "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid']))])
+                ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid'])), 'Tier: ' + flip['tier']])
 
 
 def main():
@@ -171,7 +178,7 @@ def main():
     findFlips()
 
     # Sort flips
-    flips = sorted(flips, key=lambda x: x[-1])
+    flips = sorted(flips, key=lambda x: int(x[-2][8:]))
 
     # Format output
     lens = [max(map(len, col)) for col in zip(*flips)]
@@ -182,8 +189,8 @@ def main():
     # Print results
     print(str(len(flips)) + ' items found')
     time.sleep(1)
-    # print('\n'.join(table))
-    print(*table, sep='\n')
+    # print(*table, sep='\n')
+    print('\n'.join(table))
 
 
 if __name__ == "__main__":
