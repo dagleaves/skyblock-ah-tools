@@ -11,8 +11,6 @@ import nbt
 import sys
 import io
 
-# TODO: Do stars matter?
-
 DEBUG = True
 DEBUG = False
 
@@ -23,11 +21,11 @@ filtered_auctions = {"common": {}, "uncommon": {}, "rare": {}, "epic": {
 }, "mythic": {}, "legendary": {}, "divine": {}, "special": {}, "very_special": {}, 'supreme': {}}
 flips = []
 
-MAX_CONNECTIONS = 5
-MAX_PRICE = 5000000
-MIN_PROFIT = 100000
-MIN_VOLUME = 5      # filter out low sale volume auctions
-REFORGES = ['Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', 'Spicy ', 'Legendary ', 'Dirty ', 'Fabled ', 'Suspicious ', 'Gilded ', 'Warped ', 'Withered ', 'Bulky ', 'Treacherous ', 'Stiff ', 'Lucky ', 'Salty ', 'Deadly ', 'Fine ', 'Grand ', 'Hasty ', 'Neat ', 'Rapid ', 'Unreal ', 'Awkward ', 'Rich ', 'Precise ', 'Spiritual ', 'Headstrong ', 'Clean ', 'Fierce ', 'Heavy ', 'Light ', 'Mythic ', 'Pure ', 'Smart ', 'Titanic ', 'Wise ', 'Perfect ', 'Necrotic ', 'Ancient ', 'Spiked ', 'Renowned ', 'Cubic ', 'Hyper ', 'Reinforced ',
+MAX_CONNECTIONS = 10
+MAX_PRICE = 2000000
+MIN_PROFIT = 200000
+MIN_VOLUME = 10      # filter out low sale volume listings
+REFORGES = ['Shiny ', 'Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', 'Spicy ', 'Legendary ', 'Dirty ', 'Fabled ', 'Suspicious ', 'Gilded ', 'Warped ', 'Withered ', 'Bulky ', 'Treacherous ', 'Stiff ', 'Lucky ', 'Salty ', 'Deadly ', 'Fine ', 'Grand ', 'Hasty ', 'Neat ', 'Rapid ', 'Unreal ', 'Awkward ', 'Rich ', 'Precise ', 'Spiritual ', 'Headstrong ', 'Clean ', 'Fierce ', 'Heavy ', 'Light ', 'Mythic ', 'Pure ', 'Smart ', 'Titanic ', 'Wise ', 'Perfect ', 'Necrotic ', 'Ancient ', 'Spiked ', 'Renowned ', 'Cubic ', 'Hyper ', 'Reinforced ',
             'Loving ', 'Ridiculous ', 'Empowered ', 'Giant ', 'Submerged ', 'Jaded ', 'Double-Bit ', 'Lumberjack\'s ', 'Great ', 'Rugged ', 'Lush ', 'Green Thumb ', 'Peasant\'s ', 'Robust ', 'Zooming ', 'Unyielding ', 'Prospector\'s ', 'Excellent ', 'Sturdy ', 'Fortunate ', 'Moil ', 'Toil ', 'Blessed ', 'Bountiful ', 'Magnetic ', 'Fruitful ', 'Refined ', 'Stellar ', 'Mithraic ', 'Auspicious ', 'Fleet ', 'Heated ', 'Ambered ', 'Waxed ', 'Fortified ', 'Strengthened ', 'Glistening ', 'Very ', 'Highly ', 'Extremely ', 'Not So ', 'Thicc ', 'Absolutely ', 'Even More ']
 
 
@@ -42,6 +40,8 @@ def checkItem(item):
         return (False, 'Too Expensive')
     if item['item_name'] == 'Enchanted Book':
         return (False, 'Enchanted Book')
+    if item['item_name'] == 'Skeleton Skull':
+        return (False, 'Skeleton Skull')
     return (True, 'Match')
 
 
@@ -162,7 +162,7 @@ def main():
         results.extend(grequests.map(resp))
 
     # Get items from remaining pages
-    print('Loading Auctions...')
+    print('Filtering Auctions...')
     for res in results:
         try:
             data = json.loads(res.content)
