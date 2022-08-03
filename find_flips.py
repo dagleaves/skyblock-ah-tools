@@ -1,6 +1,8 @@
 # coding=utf-8
 
 from sortedcontainers import SortedList as slist
+from calc_avg_prices import get_avg_prices
+from search_avg_prices import search_item
 from base64 import b64decode
 import traceback
 import grequests
@@ -10,6 +12,8 @@ import time
 import nbt
 import sys
 import io
+
+# TODO: What do I do with avg prices? Filter if too high over?
 
 DEBUG = True
 DEBUG = False
@@ -22,7 +26,7 @@ filtered_auctions = {"common": {}, "uncommon": {}, "rare": {}, "epic": {
 flips = []
 
 MAX_CONNECTIONS = 10
-MAX_PRICE = 2000000
+MAX_PRICE = 3000000
 MIN_PROFIT = 200000
 MIN_VOLUME = 10      # filter out low sale volume listings
 REFORGES = ['Shiny ', 'Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', 'Spicy ', 'Legendary ', 'Dirty ', 'Fabled ', 'Suspicious ', 'Gilded ', 'Warped ', 'Withered ', 'Bulky ', 'Treacherous ', 'Stiff ', 'Lucky ', 'Salty ', 'Deadly ', 'Fine ', 'Grand ', 'Hasty ', 'Neat ', 'Rapid ', 'Unreal ', 'Awkward ', 'Rich ', 'Precise ', 'Spiritual ', 'Headstrong ', 'Clean ', 'Fierce ', 'Heavy ', 'Light ', 'Mythic ', 'Pure ', 'Smart ', 'Titanic ', 'Wise ', 'Perfect ', 'Necrotic ', 'Ancient ', 'Spiked ', 'Renowned ', 'Cubic ', 'Hyper ', 'Reinforced ',
@@ -52,7 +56,7 @@ def checkAuctions():
         item_name = ' '.join(item_name.encode(
             'ascii', 'ignore').decode().split())    # remove unicode characters
         item['item_name'] = item_name
-        item_tier = item['tier']
+        item_tier = item['tier'].lower()
         item_bytes = nbt.nbt.NBTFile(
             fileobj=io.BytesIO(b64decode(item['item_bytes'])))
         item_count = item_bytes[0][0][1].value
@@ -96,14 +100,13 @@ def checkAuctions():
                     break
 
             # Add item to sorted dictionary of items
-            if item_name in filtered_auctions[item_tier.lower()]:
+            if item_name in filtered_auctions[item_tier]:
                 # print('Item exists in filtered auction')
-                filtered_auctions[item_tier.lower(
-                )][item_name].add(item)
+                filtered_auctions[item_tier][item_name].add(item)
                 # print('Appended item to filtered auction')
             else:
                 # print('Item does not exist in filtered auction')
-                filtered_auctions[item_tier.lower()][item_name] = slist(
+                filtered_auctions[item_tier][item_name] = slist(
                     [item], key=lambda x: x['starting_bid'])
                 # print('New slist created for item')
 
@@ -115,6 +118,11 @@ def checkAuctions():
 
 def findFlips():
     global filtered_auctions, flips
+
+    # Get item averages
+    with open('avg_prices.json') as f:
+        average_prices = json.load(f)
+
     for tier in filtered_auctions.keys():
         for item_name in filtered_auctions[tier]:
             item_list = filtered_auctions[tier][item_name]
@@ -125,8 +133,12 @@ def findFlips():
             if item_list[1]['starting_bid'] - item_list[0]['starting_bid'] < MIN_PROFIT:
                 continue
             flip = item_list[0]
-            flips.append(
-                ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid'])), 'Tier: ' + flip['tier']])
+            if flip['item_name'] in average_prices:
+                flips.append(
+                    ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid'])), 'Avg Price: ' + average_prices[flip['item_name']], 'Tier: ' + flip['tier']])
+            else:
+                flips.append(
+                    ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid'])), 'Avg Price: N/A', Tier: ' + flip['tier']])
 
 
 def main():
@@ -173,6 +185,9 @@ def main():
             checkAuctions()
         else:
             print('Failed GET request: ' + data['cause'])
+
+    # Retrieve avg price history
+    get_avg_prices()
 
     # Find flips
     findFlips()
