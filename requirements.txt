@@ -1,3 +1,4 @@
+sortedcontainers
 apscheduler
 grequests
 nbt
