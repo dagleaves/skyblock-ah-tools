@@ -13,9 +13,10 @@ def main():
     with open('avg_prices.json') as f:
         average_prices = json.load(f)
 
+    item_name = ' '.join(args.item_name)
     for tier in average_prices:
-        if args.item_name[0] in average_prices[tier]:
-            print('Average price:', average_prices[tier][args.item_name[0]])
+        if item_name in average_prices[tier]:
+            print('Average price:', average_prices[tier][item_name])
             return
     print('No historical data available for this item')
 

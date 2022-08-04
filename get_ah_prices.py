@@ -16,6 +16,9 @@ DEBUG = False
 MAX_CONNECTIONS = 10
 url_base = "https://api.hypixel.net/skyblock/auctions"
 
+REFORGES = ['Shiny ', 'Gentle ', 'Odd ', 'Fast ', 'Fair ', 'Epic ', 'Sharp ', 'Heroic ', 'Spicy ', 'Legendary ', 'Dirty ', 'Fabled ', 'Suspicious ', 'Gilded ', 'Warped ', 'Withered ', 'Bulky ', 'Treacherous ', 'Stiff ', 'Lucky ', 'Salty ', 'Deadly ', 'Fine ', 'Grand ', 'Hasty ', 'Neat ', 'Rapid ', 'Unreal ', 'Awkward ', 'Rich ', 'Precise ', 'Spiritual ', 'Headstrong ', 'Clean ', 'Fierce ', 'Heavy ', 'Light ', 'Mythic ', 'Pure ', 'Smart ', 'Titanic ', 'Wise ', 'Perfect ', 'Necrotic ', 'Ancient ', 'Spiked ', 'Renowned ', 'Cubic ', 'Hyper ', 'Reinforced ',
+            'Loving ', 'Ridiculous ', 'Empowered ', 'Giant ', 'Submerged ', 'Jaded ', 'Double-Bit ', 'Lumberjack\'s ', 'Great ', 'Rugged ', 'Lush ', 'Green Thumb ', 'Peasant\'s ', 'Robust ', 'Zooming ', 'Unyielding ', 'Prospector\'s ', 'Excellent ', 'Sturdy ', 'Fortunate ', 'Moil ', 'Toil ', 'Blessed ', 'Bountiful ', 'Magnetic ', 'Fruitful ', 'Refined ', 'Stellar ', 'Mithraic ', 'Auspicious ', 'Fleet ', 'Heated ', 'Ambered ', 'Waxed ', 'Fortified ', 'Strengthened ', 'Glistening ', 'Very ', 'Highly ', 'Extremely ', 'Not So ', 'Thicc ', 'Absolutely ', 'Even More ']
+
 lowest_bins = {"common": {}, "uncommon": {}, "rare": {}, "epic": {
 }, "mythic": {}, "legendary": {}, "divine": {}, "special": {}, "very_special": {}, 'supreme': {}}
 
@@ -44,6 +47,28 @@ def get_lowest_bins(auction):
         # Record lowest BIN price
         if item_name in lowest_bins[item_tier].keys() and item_price >= lowest_bins[item_tier][item_name]:
             continue
+
+        for reforge in REFORGES:
+                # Check if item is reforged
+                if item_name.startswith(reforge):
+                    # Make sure it is not a duplicate prefix item
+                    if reforge == 'Wise ' and item_name[len(reforge):] == 'Dragon Armor':
+                        continue
+                    if reforge == 'Strong ' and item_name[len(reforge):] == 'Dragon Armor':
+                        continue
+                    if reforge == 'Superior ' and item_name[len(reforge):] == 'Dragon Armor':
+                        continue
+                    if reforge == 'Heavy ' and item_name[len(reforge):] == 'Armor':
+                        continue
+                    if reforge == 'Perfect ' and item_name[len(reforge):] == 'Armor':
+                        continue
+                    if reforge == 'Refined ' and item_name[len(reforge):] == 'Mithril Pickaxe':
+                        continue
+                    if reforge == 'Refined ' and item_name[len(reforge):] == 'Titanium Pickaxe':
+                        continue
+                    item_name = item_name[len(reforge):]
+                    break
+
         lowest_bins[item_tier][item_name] = item_price
 
 
