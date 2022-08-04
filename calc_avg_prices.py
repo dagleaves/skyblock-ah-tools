@@ -18,6 +18,8 @@ def add_auction_to_sums(auction):
 
 def load_history():
     for file in os.listdir('history'):
+        if file.startswith('.') or not file.endswith('.json'):
+            continue
         filedate = file.split('_')[0]
         year = filedate.split('-')[0]
         month = filedate.split('-')[1]
