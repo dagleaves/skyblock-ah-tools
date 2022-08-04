@@ -138,7 +138,7 @@ def findFlips():
                     ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid'])), 'Avg Price: ' + average_prices[flip['item_name']], 'Tier: ' + flip['tier']])
             else:
                 flips.append(
-                    ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid'])), 'Avg Price: N/A', Tier: ' + flip['tier']])
+                    ["/viewauction " + flip['uuid'], flip['item_name'], "Price: " + str(int(flip['starting_bid'])), "Profit: " + str(int(item_list[1]['starting_bid'] - item_list[0]['starting_bid'])), 'Avg Price: N/A', 'Tier: ' + flip['tier']])
 
 
 def main():

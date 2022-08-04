@@ -14,11 +14,18 @@ def main():
         average_prices = json.load(f)
 
     item_name = ' '.join(args.item_name)
+    avg_price = search_item(average_prices, item_name)
+    if avg_price == -1:
+        print('No historical data available for this item name')
+        return
+    print('Average Price:', avg_price)
+
+
+def search_item(average_prices, item_name):
     for tier in average_prices:
         if item_name in average_prices[tier]:
-            print('Average price:', average_prices[tier][item_name])
-            return
-    print('No historical data available for this item')
+            return average_prices[tier][item_name]
+    return -1
 
 
 if __name__ == '__main__':
